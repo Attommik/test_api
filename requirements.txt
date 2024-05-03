@@ -1,0 +1,4 @@
+pydantic
+pydantic_core
+fastapi
+uvicorn
