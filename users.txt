@@ -1,1 +1,0 @@
-{"current_id": 4, "users_list": [{"name": "admin", "password": "admin", "id": 1}, {"name": "user", "password": "user1232", "id": 2}, {"name": "Fuser", "password": "Fuser", "id": 3}, {"name": "Alice", "password": "Alice", "id": 4}]}
