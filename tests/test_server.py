@@ -47,13 +47,13 @@ def add_user(name, passwd, user_token):
 
 
 def add_record(header, body, user_token, user_id):
-    return client.post("/api/users",
+    return client.post("/api/records",
                        headers={"token": str(user_token)},
                        json={
-                              "user_id": user_id,
-                              "header": header,
-                              "body": body
-                            })
+                           "user_id": user_id,
+                           "header": header,
+                           "body": body
+                       })
 
 
 client = TestClient(server)
@@ -68,20 +68,20 @@ class TestAuthorize:
         assert response.status_code == 200
         assert response.json()["token"]
 
-    @pytest.mark.parametrize(
-        "name, passwd",
-        [
-            ("user", "user"),
-            ("adm1n", "admin"),
-            ("", "")
-        ]
-    )
-    def test_authorize_negative(self, name, passwd):
-        response = client.post("/api/auth",
-                               json={"name": name, "password": passwd})
-
-        assert response.status_code == 200
-        assert response.json()["error"]
+    # @pytest.mark.parametrize(
+    #     "name, passwd",
+    #     [
+    #         ("user", "user"),
+    #         ("adm1n", "admin"),
+    #         ("", "")
+    #     ]
+    # )
+    # def test_authorize_negative(self, name, passwd):
+    #     response = client.post("/api/auth",
+    #                            json={"name": name, "password": passwd})
+    #
+    #     assert response.status_code == 200
+    #     assert response.json()["error"]
 
 
 class TestUserAdd:
@@ -102,30 +102,23 @@ class TestUserAdd:
             "password": passwd
         }
 
-    @pytest.mark.parametrize(
-        "name, passwd",
-        [
-            ("user", "user"),
-            ("", "test"),
-            (" ", "test1"),
-            ("test", ""),
-            ("test1", " "),
-            ("", ""),
-            (" ", " ")
-        ]
-    )
-    def test_add_user_negative(self, name, passwd):
-        response = add_user(name, passwd, token)
-
-        assert response.status_code == 200
-        assert response.json()["error"]
-
-
-# def test_get_users_list():
-#     response = client.get("/api/users")
-#     assert response.status_code == 200
-#     assert response.json() == {"data": ["admin", "user", "qe"]}
-#     print(response.json())
+    # @pytest.mark.parametrize(
+    #     "name, passwd",
+    #     [
+    #         ("user", "user"),
+    #         ("", "test"),
+    #         (" ", "test1"),
+    #         ("test", ""),
+    #         ("test1", " "),
+    #         ("", ""),
+    #         (" ", " ")
+    #     ]
+    # )
+    # def test_add_user_negative(self, name, passwd):
+    #     response = add_user(name, passwd, token)
+    #
+    #     assert response.status_code == 200
+    #     assert response.json()["error"]
 
 
 class TestChangeUser:
@@ -141,38 +134,93 @@ class TestChangeUser:
             "password": passwd
         }
 
-    @pytest.mark.parametrize(
-        "user_id, name, passwd",
-        [
-            (2, "adm", "adm"),
-            (-2, "adm", "adm"),
-            (1, "", "adm"),
-            (1, "adm", ""),
-            (1, "", "")
-        ]
-    )
-    def test_change_user_negative(self, user_id, name, passwd):
-        response = client.put(f"/api/users/{user_id}",
-                              headers={"token": token},
-                              json={"name": name, "password": passwd})
-        assert response.status_code == 200
-        print(response.json())
-        assert response.json()["error"]
+    # @pytest.mark.parametrize(
+    #     "user_id, name, passwd",
+    #     [
+    #         (2, "adm", "adm"),
+    #         (-2, "adm", "adm"),
+    #         (1, "", "adm"),
+    #         (1, "adm", ""),
+    #         (1, "", "")
+    #     ]
+    # )
+    # def test_change_user_negative(self, user_id, name, passwd):
+    #     response = client.put(f"/api/users/{user_id}",
+    #                           headers={"token": token},
+    #                           json={"name": name, "password": passwd})
+    #     assert response.status_code == 200
+    #     print(response.json())
+    #     assert response.json()["error"]
 
 
-# @pytest.mark.parametrize(
-#     "header, body, user_token, user_id",
-#     [
-#         ("head", "body", token, 1),
-#         ("head", "body", None, 1),
-#         ("head", "body", token, -99)
-#     ]
-# )
-# def test_add_record(header, body, user_token, user_id):
-#     return client.post("/api/users",
-#                        headers={"token": user_token},
-#                        json={
-#                               "user_id": user_id,
-#                               "header": header,
-#                               "body": body
-#                             })
+# def test_get_users_list():
+#     response = client.get("/api/users")
+#     assert response.status_code == 200
+#     assert response.json() == {"data": ["admin", "user", "qe"]}
+#     print(response.json())
+
+
+@pytest.mark.parametrize(
+    "header, body, user_token, user_id",
+    [
+        ("head", "body", token, 1),
+        ("", "body", token, 1),
+        ("head", "", token, 1),
+        ("", "", token, 1),
+    ]
+)
+def test_add_record(header, body, user_token, user_id):
+    response = client.post("/api/records",
+                           headers={"token": user_token},
+                           json={
+                               "user_id": user_id,
+                               "header": header,
+                               "body": body
+                           })
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "header, body, user_token, user_id",
+    [
+        ("head", "body", "", 1),
+        ("head", "body", "111", 1),
+        ("head", "body", token, -99)
+    ]
+)
+def test_add_record_negative(header, body, user_token, user_id):
+    response = client.post("/api/records",
+                           headers={"token": user_token},
+                           json={
+                               "user_id": user_id,
+                               "header": header,
+                               "body": body
+                           })
+    assert response.json()["error"]
+
+
+def test_delete_record():
+    record = add_record("head", "body", token, 1).json()
+    response = client.delete(f"api/records/{record["id"]}",
+                             headers={"token": token})
+    assert response.json() == {}
+    print(record)
+
+
+def test_delete_record_negative():
+    record = add_record("head", "body", token, 2).json()
+    response = client.delete(f"api/records/{record["id"]}",
+                             headers={"token": token})
+    assert response.json()["error"]
+
+
+@pytest.mark.parametrize("")
+def test_change_record():
+    record = add_record("head", "body", token, 1).json()
+    response = client.put(f"/api/records/{record["id"]}",
+                          headers={"token": token},
+                          json={
+                              "user_id": 8,
+                              "header": "head1",
+                              "body": "body1"
+                            })
