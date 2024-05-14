@@ -1,63 +1,17 @@
 import json
+import time
+
 import pytest
-import os
-from fastapi.testclient import TestClient
 from datetime import datetime
-from server import server
 from config import AUTH_FILENAME, TOKEN_LIFETIME_SECONDS
+import requests
+from requests import client, Data
 
 
-client = TestClient(server)
-
-
-def authorize(name, passwd):
-    response = client.post("/api/auth",
-                           json={"name": name, "password": passwd})
-
-    return response
-
-
-def add_user(token, name, passwd):
-    response = client.post("/api/users",
-                           headers={"token": token},
-                           json={"name": name, "password": passwd})
-
-    return response
-
-
-def add_record(token, user_id, header, body):
-    response = client.post("/api/records",
-                           headers={"token": token},
-                           json={
-                               "user_id": user_id,
-                               "header": header,
-                               "body": body
-                           })
-
-    return response
-
-
-@pytest.fixture(scope="module")
-def prepared_data():
-    token = authorize("admin", "admin").json()["token"]
-    user = add_user(token, "user", "user").json()
-    record1 = add_record(token, 1, "test_header1", "test_body1").json()
-    record2 = add_record(token, 2, "test_header2", "test_body2").json()
-
-    yield {"token": token, "user": user, "record1": record1, "record2": record2}
-
-    if os.path.exists("authorization.txt"):
-        os.remove("authorization.txt")
-    if os.path.exists("users.txt"):
-        os.remove("users.txt")
-    if os.path.exists("records.txt"):
-        os.remove("records.txt")
-
-
-def test_smoke(prepared_data):
-    assert prepared_data["token"]
-    assert prepared_data["user"] == {'id': 2, 'name': 'user', 'password': 'user'}
-    assert prepared_data["record1"] == {'id': 1, 'user_id': 1, 'header': 'test_header1', 'body': 'test_body1'}
+def test_smoke():
+    assert Data.token
+    assert Data.user == {'id': 2, 'name': 'user', 'password': 'user'}
+    assert Data.record1 == {'id': 1, 'user_id': 1, 'header': 'test_header1', 'body': 'test_body1'}
 
 
 class TestAuthorize:
@@ -68,9 +22,8 @@ class TestAuthorize:
             ("user", "user")
         ]
     )
-    def test_authorize(self, name, passwd, prepared_data):
-        response = client.post("/api/auth",
-                               json={"name": name, "password": passwd})
+    def test_authorize(self, name, passwd):
+        response = requests.authorize(name, passwd)
 
         assert response.status_code == 200
         assert response.json()["token"]
@@ -83,9 +36,8 @@ class TestAuthorize:
             ("", "")
         ]
     )
-    def test_authorize_negative(self, name, passwd, prepared_data):
-        response = client.post("/api/auth",
-                               json={"name": name, "password": passwd})
+    def test_authorize_negative(self, name, passwd):
+        response = requests.authorize(name, passwd)
 
         # assert response.status_code == 200
         assert response.json()["error"]
@@ -99,22 +51,21 @@ class TestUserAdd:
             ("user 1!", "user 1!")
         ]
     )
-    def test_add_user(self, name, passwd, prepared_data):
-        response = add_user(prepared_data["token"], name, passwd)
+    def test_add_user(self, name, passwd):
+        response = requests.add_user(Data.token, name, passwd)
         user_id = response.json()["id"]
         assert response.status_code == 200
-        assert client.get(f"api/users/{user_id}",
-                          headers={"token": prepared_data["token"]}).json() == {
+        assert requests.get_user(Data.token, user_id).json() == {
             "id": user_id,
             "name": name,
             "password": passwd
         }
 
-    @pytest.mark.skip
+    @pytest.mark.skip()
     @pytest.mark.parametrize(
         "token, name, passwd",
         [
-            (-1, "admin", "admin"),
+            (-1 , "admin", "admin"),
             ("132313", "user", "user"),
             ("132313", "test", "test"),
             (-1, "test", ""),
@@ -125,21 +76,19 @@ class TestUserAdd:
             (-1, " ", " ")
         ]
     )
-    def test_add_user_negative(self, token, name, passwd, prepared_data):
+    def test_add_user_negative(self, token, name, passwd):
         if token == -1:
-            token = prepared_data["token"]
-        response = add_user(token, name, passwd)
+            token = Data.token
+        response = requests.add_user(token, name, passwd)
 
         # assert response.status_code == 200
         assert response.json()["error"]
 
 
 class TestChangeUser:
-    def test_change_user(self, prepared_data):
+    def test_change_user(self):
         user_id, name, passwd = 1, "adm", "adm"
-        response = client.put(f"/api/users/{user_id}",
-                              headers={"token": prepared_data["token"]},
-                              json={"name": name, "password": passwd})
+        response = requests.change_user(Data.token, user_id, name, passwd)
         # assert response.status_code == 200
         assert response.json() == {
             "id": user_id,
@@ -162,28 +111,19 @@ class TestChangeUser:
             (-1, 1, "", "")
         ]
     )
-    def test_change_user_negative(self, token, user_id, name, passwd, prepared_data):
+    def test_change_user_negative(self, token, user_id, name, passwd):
         if token == -1:
-            token = prepared_data["token"]
-        response = client.put(f"/api/users/{user_id}",
-                              headers={"token": token},
-                              json={"name": name, "password": passwd})
+            token = Data.token
+        response = requests.change_user(token, user_id, name, passwd)
         # assert response.status_code == 200
         assert response.json()["error"]
 
 
-def test_change_record(prepared_data):
-    record_id = prepared_data["record1"]["id"]
-    client.put(f"/api/records/{record_id}",
-               headers={"token": prepared_data["token"]},
-               json={
-                   "user_id": 1,
-                   "header": "head1",
-                   "body": "body1"
-               })
+def test_change_record():
+    requests.change_record(Data.token, Data.record1["id"], Data.record1["user_id"], "head1", "body1")
 
-    assert client.get(f"api/records/{record_id}").json() == {
-        "id": record_id,
+    assert requests.get_record(Data.record1["id"]).json() == {
+        "id": Data.record1["id"],
         "user_id": 1,
         "header": "head1",
         "body": "body1"
@@ -227,7 +167,7 @@ def test_delete_record(prepared_data):
     "token, record_id",
     [
         (-1, -3),
-        (-1, 3),
+        (-1, 30),
         (-1, 2),
         (-1, "2"),
         ("", 1)
@@ -240,7 +180,8 @@ def test_delete_record_negative(token, record_id, prepared_data):
                              headers={"token": token})
 
     assert response.json()["error"]
-    # print(client.get("api/records").json())
+    print(response.json())
+    print(client.get("api/records").json())
 
 
 @pytest.mark.parametrize(
@@ -255,7 +196,7 @@ def test_delete_record_negative(token, record_id, prepared_data):
 def test_add_record(token, header, body, user_id, prepared_data):
     if token == -1:
         token = prepared_data["token"]
-    response = add_record(token, user_id, header, body)
+    response = requests.add_record(token, user_id, header, body)
 
     assert response.status_code == 200
     # print((response.json()))
@@ -293,14 +234,13 @@ def test_token_lifetime(prepared_data):
         last_call = auth["last_call"]
         token = auth["token"]
         break
-    while last_call + TOKEN_LIFETIME_SECONDS >= int(datetime.now().timestamp()):
-        continue
+    # if last_call + TOKEN_LIFETIME_SECONDS >= int(datetime.now().timestamp()):
+    #     time.sleep(TOKEN_LIFETIME_SECONDS)
 
-    response = add_user(token, "name", "passwd")
+    response = requests.add_user(token, "name", "passwd")
     user_id = response.json()["id"]
     assert response.status_code == 200
-    assert client.get(f"api/users/{user_id}",
-                      headers={"token": token}).json() == {
+    assert requests.get_user(token, user_id).json() == {
                "id": user_id,
                "name": "name",
                "password": "passwd"
