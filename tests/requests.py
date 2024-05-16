@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from server import server
 
+
 client = TestClient(server)
 
 
@@ -61,4 +62,10 @@ def change_record(token, record_id, user_id, header, body):
 
 def get_record(record_id):
     response = client.get(f"api/records/{record_id}")
+    return response
+
+
+def delete_record(token, record_id):
+    response = client.delete(f"api/records/{record_id}",
+                             headers={"token": token})
     return response
