@@ -14,7 +14,7 @@ class TestAuthorize:
         response = requests.authorize(name, passwd)
 
         assert response.status_code == 200
-        assert response.json()["token"]
+        assert response.json().get("token", False)
 
     @pytest.mark.parametrize(
         "name, passwd",
@@ -22,11 +22,14 @@ class TestAuthorize:
             ("user111", "user"),
             ("admin", "admin111"),
             ("admin", ""),
-            ("", "")
+            ("", "admin"),
+            ("admin", 1),
+            (1, "admin"),
+            ("", ""),
         ]
     )
     def test_authorize_negative(self, name, passwd):
         response = requests.authorize(name, passwd)
 
         # assert response.status_code == 200
-        assert response.json()["error"]
+        assert response.json().get("error", False)

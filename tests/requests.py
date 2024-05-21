@@ -69,3 +69,8 @@ def delete_record(token, record_id):
     response = client.delete(f"api/records/{record_id}",
                              headers={"token": token})
     return response
+
+
+def reset_data():
+    response = client.put("/wipe")
+    return response

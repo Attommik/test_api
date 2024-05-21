@@ -83,6 +83,11 @@ class Users:
             return changed.to_dict()
         return {"error": f"user with {id=} does not exist"}
 
+    def reset(self):
+        with open(USERS_FILENAME, "w"):
+            pass
+        self.__init__()
+
 
 @singletone
 class Records:
@@ -94,7 +99,7 @@ class Records:
             self._load_from_file()
         except (FileNotFoundError, json.decoder.JSONDecodeError):
             self.current_id = 0
-            self.users_list = []
+            self.records_list = []
 
     def _save_to_file(func, **kwargs):
         def inner(self, **kwargs):
@@ -153,6 +158,11 @@ class Records:
                 return record.to_dict()
         return {"error": f"there is no record with {id=}"}
 
+    def reset(self):
+        with open(RECORDS_FILENAME, "w"):
+            pass
+        self.__init__()
+
 
 @singletone
 class AuthList:
@@ -197,16 +207,7 @@ class AuthList:
                     return auth.user_id
         return -1
 
-
-    # def check_token(self, user_id, token):
-    #     result = None
-    #     for auth in self.auth_list:
-    #         if auth.check(user_id=user_id, token=token):
-    #             if auth.is_expired():
-    #                 result = {"error": "authorization token is expired"}
-    #                 break
-    #             result = {"token": token}
-    #             break
-    #     if result:
-    #         return result
-    #     return {"error": "token does not exist"}
+    def reset(self):
+        with open(AUTH_FILENAME, "w"):
+            pass
+        self.__init__()

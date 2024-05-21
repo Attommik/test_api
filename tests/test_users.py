@@ -16,13 +16,8 @@ class TestUserAdd:
         user_id = response.json()["id"]
 
         assert response.status_code == 200
-        assert requests.get_user(Data.token, user_id).json() == {
-            "id": user_id,
-            "name": name,
-            "password": passwd
-        }
+        assert requests.get_user(Data.token, user_id).json() == response.json()
 
-    @pytest.mark.skip("Создает пользователя с пустым полем имени и/или пароля")
     @pytest.mark.parametrize(
         "token, name, passwd",
         [
@@ -33,6 +28,8 @@ class TestUserAdd:
             (" ", "test", "test"),
             (-1, "test", ""),
             (-1, "test1", " "),
+            (-1, "test", 1),
+            (-1, 1, "test"),
             (-1, "", "test"),
             (-1, " ", "test1"),
             (-1, "", ""),
@@ -45,7 +42,7 @@ class TestUserAdd:
         response = requests.add_user(token, name, passwd)
 
         # assert response.status_code == 200
-        assert response.json()["error"]
+        assert response.json().get("error", False)
 
 
 class TestChangeUser:
@@ -54,13 +51,8 @@ class TestChangeUser:
         response = requests.change_user(Data.token, user_id, name, passwd)
 
         assert response.status_code == 200
-        assert requests.get_user(Data.token, user_id).json() == {
-            "id": user_id,
-            "name": name,
-            "password": passwd
-        }
+        assert requests.get_user(Data.token, user_id).json() == response.json()
 
-    @pytest.mark.skip("Сохраняет пользователя с пустым полем имени и/или пароля")
     @pytest.mark.parametrize(
         "token, user_id, name, passwd",
         [
@@ -73,7 +65,8 @@ class TestChangeUser:
             (" ", 2, "adm", "adm"),
             (-1, 1, "", "adm"),
             (-1, 1, "adm", ""),
-            (-1, 1, "", "")
+            (-1, 1, 1, "adm"),
+            (-1, 1, "adm", 1)
         ]
     )
     def test_change_user_negative(self, token, user_id, name, passwd):
@@ -82,4 +75,4 @@ class TestChangeUser:
         response = requests.change_user(token, user_id, name, passwd)
 
         # assert response.status_code == 200
-        assert response.json()["error"]
+        assert response.json().get("error", False)

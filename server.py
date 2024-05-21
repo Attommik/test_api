@@ -82,6 +82,13 @@ def get_records_list():
     return answer_data
 
 
+@server.put("/wipe")
+def wipe_all_data():
+    users.reset()
+    records.reset()
+    tokens.reset()
+
+
 def generate_response(func: FunctionType, data: dict, token: str):
     if tokens.is_token_exist(token):
         result_data = func(**data)

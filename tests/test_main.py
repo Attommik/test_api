@@ -15,7 +15,7 @@ def test_smoke():
     assert Data.record2 == {'id': 2, 'user_id': 2, 'header': 'test_header2', 'body': 'test_body2'}
 
 
-@pytest.mark.skip("Токен не протухает")
+# @pytest.mark.skip("Токен не протухает")
 def test_token_lifetime():
     last_call = 0
     token = 0
@@ -31,4 +31,4 @@ def test_token_lifetime():
     response = requests.add_user(token, "name", "passwd")
 
     # assert response.status_code == 200
-    assert response.json()["error"]
+    assert response.json().get("error", False)
