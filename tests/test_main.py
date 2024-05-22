@@ -15,7 +15,6 @@ def test_smoke():
     assert Data.record2 == {'id': 2, 'user_id': 2, 'header': 'test_header2', 'body': 'test_body2'}
 
 
-# @pytest.mark.skip("Токен не протухает")
 def test_token_lifetime():
     last_call = 0
     token = 0
